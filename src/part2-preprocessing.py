@@ -27,3 +27,63 @@ arrest_events = pd.read_csv('data/arrest_events_raw.csv')
 
 # Perform a full outer join on 'person_id'
 df_arrests = pd.merge(pred_universe, arrest_events, on='person_id', how='outer')
+
+# Create 'y' column for rearrests within 365 days
+df_arrests['y'] = 0
+
+# Loop through each row in df_arrests to calculate 'y'
+for idx, row in df_arrests.iterrows():
+    arrest_date = row['arrest_date_event']
+    person_id = row['person_id']
+    if not pd.isnull(arrest_date):
+        start_date = pd.to_datetime(arrest_date) + pd.Timedelta(days=1)
+        end_date = start_date + pd.Timedelta(days=365)
+        felony = arrest_events[(arrest_events['person_id'] == person_id) & 
+                                 (arrest_events['arrest_date_event'] >= start_date) & 
+                                 (arrest_events['arrest_date_event'] <= end_date) & 
+                                 (arrest_events['charge_type'] == 'felony')]
+        if not felony.empty:
+            df_arrests.at[idx, 'y'] = 1
+          
+#Calculate the share of arrestees rearrested for a felony crime in the next year
+share_rearrested = df_arrests['y'].mean()
+print(f"What share of arrestees in the `df_arrests` table were rearrested for a felony crime in the next year? {share_rearrested}")
+
+# Create 'current_charge_felony' column to indicate if the current charge is a felony
+df_arrests['current_charge_felony'] = df_arrests['charge_type'].apply(lambda x: 1 if x == 'felony' else 0)
+
+# Calculate the share of current charges that are felonies
+share_felony_charges = df_arrests['current_charge_felony'].mean()
+print(f"What share of current charges are felonies? {share_felony_charges}")
+
+# Create 'num_fel_arrests_last_year' column to count felony arrests in the past year
+df_arrests['num_fel_arrests_last_year'] = 0
+
+# Loop through each row in df_arrests to calculate 'num_fel_arrests_last_year'
+for idx, row in df_arrests.iterrows():
+    arrest_date = row['arrest_date_event']
+    person_id = row['person_id']
+    if not pd.isnull(arrest_date):
+        start_date = pd.to_datetime(arrest_date) - pd.Timedelta(days=365)
+        end_date = pd.to_datetime(arrest_date) - pd.Timedelta(days=1)
+        felonies = arrest_events[(arrest_events['person_id'] == person_id) & 
+                                 (arrest_events['arrest_date_event'] >= start_date) & 
+                                 (arrest_events['arrest_date_event'] <= end_date) & 
+                                 (arrest_events['charge_type'] == 'felony')]
+        df_arrests.at[idx, 'num_fel_arrests_last_year'] = len(felonies)
+
+# Calculate the average number of felony arrests in the last year
+avg_felony_arrests_last_year = df_arrests['num_fel_arrests_last_year'].mean()
+print(f"What is the average number of felony arrests in the last year? {avg_felony_arrests_last_year}")
+
+# Print the mean of 'num_fel_arrests_last_year'
+print(f"Mean of 'num_fel_arrests_last_year': {df_arrests['num_fel_arrests_last_year'].mean()}")
+
+# Print the first few rows of pred_universe
+print(pred_universe.head())
+
+# Save df_arrests for use in main.py
+df_arrests.to_csv('data/df_arrests.csv', index=False)
+
+# Return df_arrests for use in main.py
+df_arrests
