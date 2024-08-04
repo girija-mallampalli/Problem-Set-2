@@ -43,3 +43,38 @@ def calibration_plot(y_true, y_prob, n_bins=10):
     plt.title("Calibration Plot")
     plt.legend(loc="best")
     plt.show()
+
+# Logistic Regression calibration plot
+y_true_lr = df_arrests_test['y']
+y_prob_lr = gs_cv.predict_proba(df_arrests_test[['current_charge_felony', 'num_fel_arrests_last_year']])[:, 1]
+calibration_plot(y_true_lr, y_prob_lr, n_bins=5)
+
+# Decision Tree calibration plot
+y_true_dt = df_arrests_test['y']
+y_prob_dt = gs_cv_dt.predict_proba(df_arrests_test[['current_charge_felony', 'num_fel_arrests_last_year']])[:, 1]
+calibration_plot(y_true_dt, y_prob_dt, n_bins=5)
+
+# Which model is more calibrated?
+print("Which model is more calibrated? You can judge this based on how closely the calibration curve follows the 45-degree line.")
+
+# Extra Credit
+# Compute PPV for the logistic regression model for arrestees ranked in the top 50 for predicted risk
+top_50_lr = np.argsort(y_prob_lr)[-50:]
+ppv_lr = precision_score(y_true_lr.iloc[top_50_lr], np.ones(50))
+print(f"PPV for the logistic regression model for arrestees ranked in the top 50 for predicted risk: {ppv_lr}")
+
+# Compute PPV for the decision tree model for arrestees ranked in the top 50 for predicted risk
+top_50_dt = np.argsort(y_prob_dt)[-50:]
+ppv_dt = precision_score(y_true_dt.iloc[top_50_dt], np.ones(50))
+print(f"PPV for the decision tree model for arrestees ranked in the top 50 for predicted risk: {ppv_dt}")
+
+# Compute AUC for the logistic regression model
+auc_lr = roc_auc_score(y_true_lr, y_prob_lr)
+print(f"AUC for the logistic regression model: {auc_lr}")
+
+# Compute AUC for the decision tree model
+auc_dt = roc_auc_score(y_true_dt, y_prob_dt)
+print(f"AUC for the decision tree model: {auc_dt}")
+
+# Do both metrics agree that one model is more accurate than the other?
+print(f"Do both metrics agree that one model is more accurate than the other? PPV: {'LR' if ppv_lr > ppv_dt else 'DT'}, AUC: {'LR' if auc_lr > auc_dt else 'DT'}")
