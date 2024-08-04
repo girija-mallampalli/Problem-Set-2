@@ -17,7 +17,13 @@ PART 2: Pre-processing
 '''
 
 # import the necessary packages
-
-
+import pandas as pd
 
 # Your code here
+
+# Load the CSV files into dataframes
+pred_universe = pd.read_csv('data/pred_universe_raw.csv')
+arrest_events = pd.read_csv('data/arrest_events_raw.csv')
+
+# Perform a full outer join on 'person_id'
+df_arrests = pd.merge(pred_universe, arrest_events, on='person_id', how='outer')
