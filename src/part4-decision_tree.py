@@ -16,3 +16,39 @@ import numpy as np
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.model_selection import StratifiedKFold as KFold_strat
 from sklearn.tree import DecisionTreeClassifier as DTC
+
+# Read in the dataframes from PART 3
+df_arrests_train = pd.read_csv('data/df_arrests_train.csv')
+df_arrests_test = pd.read_csv('data/df_arrests_test.csv')
+
+# Create a parameter grid for tree depth
+parameter_grid_dt = {'max_depth': [3, 5, 10]}
+
+# Initialize the Decision Tree model
+dt_model = DecisionTreeClassifier()
+
+# Initialize GridSearchCV with the decision tree model and parameter grid
+gs_cv_dt = GridSearchCV(dt_model, parameter_grid_dt, cv=5)
+
+# Fit the model on the training data
+gs_cv_dt.fit(df_arrests_train[['current_charge_felony', 'num_fel_arrests_last_year']], df_arrests_train['y'])
+
+# Get the optimal value for max_depth
+optimal_max_depth = gs_cv_dt.best_params_['max_depth']
+
+# Determine the level of regularization
+regularization_level = 'most regularization' if optimal_max_depth == min(parameter_grid_dt['max_depth']) else 'least regularization' if optimal_max_depth == max(parameter_grid_dt['max_depth']) else 'in the middle'
+
+# Print the optimal value for max_depth and the regularization level
+print(f"What was the optimal value for max_depth? {optimal_max_depth}")
+print(f"Did it have the most or least regularization? Or in the middle? {regularization_level}")
+
+# Predict for the test set
+df_arrests_test['pred_dt'] = gs_cv_dt.predict(df_arrests_test[['current_charge_felony', 'num_fel_arrests_last_year']])
+
+# Save the training and test datasets for further use
+df_arrests_train.to_csv('data/df_arrests_train.csv', index=False)
+df_arrests_test.to_csv('data/df_arrests_test.csv', index=False)
+
+# Return the training and test dataframes for use in main.py
+df_arrests_train, df_arrests_test
