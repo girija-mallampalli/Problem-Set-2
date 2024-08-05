@@ -30,11 +30,11 @@ df_arrests_train, df_arrests_test = train_test_split(df_arrests, test_size=0.3, 
 # Create a list of feature names
 features_list = ['current_charge_felony', 'num_fel_arrests_last_year']
 
-# Create a parameter grid for the C hyperparameter
-parameter_grid = {'C': [0.01, 0.1, 1, 10, 100]}
+# Define the parameter grid for C hyperparameter
+parameter_grid = {'C': [0.1, 1.0, 10.0]}
 
 # Initialize the Logistic Regression model
-lr_model = LogisticRegression()
+lr_model = LogisticRegression(max_iter=1000)
 
 # Initialize GridSearchCV with the logistic regression model and parameter grid
 gs_cv = GridSearchCV(lr_model, parameter_grid, cv=5)
@@ -45,13 +45,17 @@ gs_cv.fit(df_arrests_train[features_list], df_arrests_train['y'])
 # Get the optimal value for C
 optimal_C = gs_cv.best_params_['C']
 
-# Determine the level of regularization
-regularization_level = 'most regularization' if optimal_C == min(parameter_grid['C']) else 'least regularization' if optimal_C == max(parameter_grid['C']) else 'in the middle'
-
-# Print the optimal value for C and the regularization level
-print(f"What was the optimal value for C? {optimal_C}")
-print(f"Did it have the most or least regularization? Or in the middle? {regularization_level}")
-
+# Get the optimal value for C
+optimal_c = gs_cv.best_params_['C']
+print(f"What was the optimal value for C? {optimal_c}")
+print("Did it have the most or least regularization? Or in the middle?")
+if optimal_c == 0.1:
+  print("Least regularization")
+elif optimal_c == 10.0:
+  print("Most regularization")
+else:
+  print("In the middle")
+  
 # Predict for the test set
 df_arrests_test['pred_lr'] = gs_cv.predict(df_arrests_test[features_list])
 
@@ -60,4 +64,4 @@ df_arrests_train.to_csv('data/df_arrests_train.csv', index=False)
 df_arrests_test.to_csv('data/df_arrests_test.csv', index=False)
 
 # Return the training and test dataframes for use in main.py
-df_arrests_train, df_arrests_test
+return df_arrests_train, df_arrests_test
