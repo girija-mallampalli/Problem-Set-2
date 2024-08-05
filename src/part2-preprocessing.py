@@ -31,6 +31,8 @@ df_arrests = pd.merge(pred_universe, arrest_events, on='person_id', how='outer')
 # Create 'y' column for rearrests within 365 days
 df_arrests['y'] = 0
 
+# Ensure 'arrest_data_event' is in datatime format
+df_arrests['arrest_date_event'] = pd.to_datetime(df_arrests['arrest_date_event'], errors='coerce')
 
 # Loop through each row in df_arrests to calculate 'y'
 for idx, row in df_arrests.iterrows():
@@ -65,8 +67,8 @@ for idx, row in df_arrests.iterrows():
     arrest_date = row['arrest_date_event']
     person_id = row['person_id']
     if not pd.isnull(arrest_date):
-        start_date = pd.to_datetime(arrest_date) - pd.Timedelta(days=365)
-        end_date = pd.to_datetime(arrest_date) - pd.Timedelta(days=1)
+        start_date = arrest_date - pd.DateOffset(years=1)
+        end_date = arrest_date - pd.DateOffset(days=1)
         felonies = arrest_events[(arrest_events['person_id'] == person_id) & 
                                  (arrest_events['arrest_date_event'] >= start_date) & 
                                  (arrest_events['arrest_date_event'] <= end_date) & 
@@ -87,4 +89,4 @@ print(pred_universe.head())
 df_arrests.to_csv('data/df_arrests.csv', index=False)
 
 # Return df_arrests for use in main.py
-df_arrests
+return df_arrests
