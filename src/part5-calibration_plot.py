@@ -44,37 +44,35 @@ def calibration_plot(y_true, y_prob, n_bins=10):
     plt.legend(loc="best")
     plt.show()
 
-# Logistic Regression calibration plot
-y_true_lr = df_arrests_test['y']
-y_prob_lr = gs_cv.predict_proba(df_arrests_test[['current_charge_felony', 'num_fel_arrests_last_year']])[:, 1]
-calibration_plot(y_true_lr, y_prob_lr, n_bins=5)
+def calibration_light():
+    # Load the test results
+    df_arrests_test_lr = pd.read_csv('data/df_arrests_test_lr.csv')
+    df_arrests_test_dt = pd.read_csv('data/df_arrests_test_dt.csv')
 
-# Decision Tree calibration plot
-y_true_dt = df_arrests_test['y']
-y_prob_dt = gs_cv_dt.predict_proba(df_arrests_test[['current_charge_felony', 'num_fel_arrests_last_year']])[:, 1]
-calibration_plot(y_true_dt, y_prob_dt, n_bins=5)
+    # Create calibration plot for logistic regression model
+    calibration_plot(df_arrests_test_lr['y'], df_arrests_test_lr['pred_lr'], n_bins=5)
 
-# Which model is more calibrated?
-print("Which model is more calibrated? You can judge this based on how closely the calibration curve follows the 45-degree line.")
+    # Create calibration plot for decision tree model
+    calibration_plot(df_arrests_test_dt['y'], df_arrests_test_dt['pred_dt'], n_bins=5)
 
-# Extra Credit
-# Compute PPV for the logistic regression model for arrestees ranked in the top 50 for predicted risk
-top_50_lr = np.argsort(y_prob_lr)[-50:]
-ppv_lr = precision_score(y_true_lr.iloc[top_50_lr], np.ones(50))
-print(f"PPV for the logistic regression model for arrestees ranked in the top 50 for predicted risk: {ppv_lr}")
+    # Determine which model is more calibrated
+    print("Which model is more calibrated? The decision tree model is more calibrated" )
+    
+    # Extra Credit
+    # Compute PPV for the logistic regression model for arrestees ranked in the top 50 for predicted risk
+    top_50_lr = df_arrests_test_lr.nlargest(50, 'pred_lr')
+    ppv_lr = top_50_lr['y'].mean()
+    print(f"PPV for logistic regression model (top 50): {ppv_lr:.2f}")
 
-# Compute PPV for the decision tree model for arrestees ranked in the top 50 for predicted risk
-top_50_dt = np.argsort(y_prob_dt)[-50:]
-ppv_dt = precision_score(y_true_dt.iloc[top_50_dt], np.ones(50))
-print(f"PPV for the decision tree model for arrestees ranked in the top 50 for predicted risk: {ppv_dt}")
+    # Compute PPV for the decision tree model for arrestees ranked in the top 50 for predicted risk
+    top_50_dt = df_arrests_test_dt.nlargest(50, 'pred_dt')
+    ppv_dt = top_50_dt['y'].mean()
+    print(f"PPV for decision tree model (top 50): {ppv_dt:.2f}")
 
-# Compute AUC for the logistic regression model
-auc_lr = roc_auc_score(y_true_lr, y_prob_lr)
-print(f"AUC for the logistic regression model: {auc_lr}")
+    # Compute AUC for the logistic regression model
+    lr_auc = auc(df_arrests_test_lr['y'], df_arrests_test_lr['pred_lr'])
+    print(f"AUC for logistic regression model: {lr_auc:.2f}")
 
-# Compute AUC for the decision tree model
-auc_dt = roc_auc_score(y_true_dt, y_prob_dt)
-print(f"AUC for the decision tree model: {auc_dt}")
-
-# Do both metrics agree that one model is more accurate than the other?
-print(f"Do both metrics agree that one model is more accurate than the other? PPV: {'LR' if ppv_lr > ppv_dt else 'DT'}, AUC: {'LR' if auc_lr > auc_dt else 'DT'}")
+    # Compute AUC for the decision tree model
+    dt_auc = auc(df_arrests_test_dt['y'], df_arrests_test_dt['pred_dt'])
+    print(f"AUC for decision tree model: {dt_auc:.2f}")
